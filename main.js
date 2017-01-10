@@ -33,24 +33,6 @@ function escape(s) {
 // Module to bind media shortcuts
 const globalShortcut = require('electron').globalShortcut
 
-// Specify flash path, supposing it is placed in the same directory with main.js.
-let pluginName
-
-/*
-// TODO: package .dll and .so as well for making this work with other platforms
-switch (process.platform) {
-  case 'win32':
-    pluginName = 'pepflashplayer.dll'
-    break
-  case 'darwin':
-    pluginName = 'PepperFlashPlayer.plugin'
-    break
-  case 'linux':
-    pluginName = 'libpepflashplayer.so'
-    break
-}
-*/
-
 // Works only for OS X now
 if (process.platform != 'darwin') {
   dialog.showMessageBox({
@@ -59,10 +41,6 @@ if (process.platform != 'darwin') {
     "message": "Only for Mac"
   });
 }
-
-pluginName = 'PepperFlashPlayer.plugin'
-
-app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, pluginName))
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -74,56 +52,37 @@ function createWindow() {
     width: 1200,
     height: 800,
     //	logo: path.join(__dirname, 'logo.png'),
-    webPreferences: {
-      plugins: true,
-      sandbox: true,
-      nodeIntegration: false
-    }
   })
 
   // And load saavn.com
-  mainWindow.loadURL(`https://www.saavn.com/`)
-
-  // Open DevTools
-  // mainWindow.webContents.openDevTools()
-
+  mainWindow.loadURL('file://' + __dirname + '/index.html')
   var webView = mainWindow.webContents;
 
-  // Navigation restricted to mainWindow only
-  var handleUrl = function (e, url) {
-    e.preventDefault()
-
-    // Opening saavn urls
-    if (url.replace('https://', '').replace('http://', '').indexOf('www.saavn.com') == 0)
-      mainWindow.loadURL(url)
-    else
-      // Open External URLs in the default web browser
-      open(url)
-  }
-  webView.on('will-navigate', handleUrl)
+  // Open DevTools
+  // webView.openDevTools()
 
   // Bind Media Shortcuts - This wouldn't have been required if the
   // client side code listened to these keys along with KEY_NEXT, KEY_SPACE etc.
   // For now trigger functionality by remapping the keys
   globalShortcut.register('MediaPlayPause', function () {
-    webView.sendInputEvent({
-      type: 'keyDown',
-      keyCode: 'Space'
-    })
+      webView.send('playpause')
   })
 
   globalShortcut.register('MediaNextTrack', function () {
-    webView.sendInputEvent({
-      type: 'keyDown',
-      keyCode: 'Right'
-    })
+      webView.send('next')
   })
 
   globalShortcut.register('MediaPreviousTrack', function () {
-    webView.sendInputEvent({
-      type: 'keyDown',
-      keyCode: 'Left'
-    })
+      webView.send('previous')
+  })
+
+  //Code to handle like/dislike feature
+  globalShortcut.register('F5', function () {
+      webView.send('dislike')
+  })
+
+  globalShortcut.register('F6', function () {
+      webView.send('like')
   })
 
   // Emitted when the window is closed.
@@ -136,8 +95,10 @@ function createWindow() {
 
   // hide the window instead of closing when `⌘ + W` is used
   mainWindow.on('close', function (e) {
-    if (!mainWindow.forceClose)
-      e.preventDefault();
+    if (mainWindow.forceClose)
+      return;
+
+    e.preventDefault();
     mainWindow.hide();
   });
 }

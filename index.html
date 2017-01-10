@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>Saavn Mac App</title>
+    </head>
+    <body style="margin: 0">
+        <webview id="saavn" src="http://www.saavn.com/" style="width: 100%; height: 100%;" plugins></webview>
+        <script>
+            const webView = document.getElementById('saavn')
+            // Navigation restricted to mainWindow only
+            webView.addEventListener('did-navigate-in-page', (e) => {
+                // Opening saavn urls
+                if (e.url.replace('https://', '').replace('http://', '').indexOf('www.saavn.com') == 0)
+                    webView.loadURL(e.url)
+                else
+                // Open External URLs in the default web browser
+                open(e.url)
+            })
+
+            //Listen for main player actions of play, pause, forward & rewind
+            require('electron').ipcRenderer.on('playpause', (event, message) => {
+                webView.sendInputEvent({
+                  type: 'keyDown',
+                  keyCode: 'Space'
+                })
+            })
+            require('electron').ipcRenderer.on('next', (event, message) => {
+                webView.sendInputEvent({
+                  type: 'keyDown',
+                  keyCode: 'Right'
+                })
+            })
+            require('electron').ipcRenderer.on('previous', (event, message) => {
+                webView.sendInputEvent({
+                  type: 'keyDown',
+                  keyCode: 'Left'
+                })
+            })
+            //Listen for any Dislikes sent from Main
+            require('electron').ipcRenderer.on('dislike', (event, message) => {
+                webView.executeJavaScript("document.getElementById('dislike').click()")
+            })
+            //Listen for any Likes sent from Main
+            require('electron').ipcRenderer.on('like', (event, message) => {
+                webView.executeJavaScript("document.getElementById('like').click()")
+            })
+        </script>
+    </body>
+</html>
